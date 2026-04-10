@@ -8,193 +8,256 @@ description: >
   about spec-driven agent workflows, verification gates, regression
   enforcement, scar-based failure injection, or session dependency DAGs.
   NEVER trigger for generic project setup or test writing outside of FORGE context.
-version: 2.0.0
+version: 3.0.0
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash, Agent]
 ---
 
-# FORGE v2 -- Agent Delegation Protocol
-
-**Fixed-spec, Output-gated, Regression-anchored, Gate-enforced Execution**
+# FORGE v3 -- Autonomous Agent Delegation Protocol
 
 *Shape it once. Strike until it holds.*
 
-FORGE delegates software tasks to Claude Code agents across multiple sessions. It solves:
+Multi-session agent delegation with spec-driven execution, autonomous gate verification, and invisible workflow artifacts.
 
-- **Context decay** -- immutable spec loaded into every session prompt
-- **Compounding rot** -- verification gates block progression until pass
-- **Regression blindness** -- session N re-verifies all ancestor sessions
+Solves: **context decay** (spec loaded every session), **compounding rot** (gates block progression), **regression blindness** (test suite catches breakage).
 
-**Critical constraint:** FORGE guarantees derivation integrity, not spec correctness. If the spec is wrong, FORGE builds the wrong thing -- correctly and repeatably.
+FORGE guarantees derivation integrity, not spec correctness. Wrong spec = wrong build, done correctly.
 
 ---
 
-## ARCHITECTURE (6 Layers)
+## Principles
 
-1. **CANONICAL SPEC** (TASKSPEC.md) -- versioned, append-only ground truth
-2. **AUDIT REPORT** (AUDIT.md) -- reads reality, produces structured verdicts
-3. **SESSION 0** -- test scaffolding generated from spec before any implementation
-4. **SESSION PROMPTS** -- spec + audit + scar loading -> scoped work + gates
-5. **EXECUTION** -- agent builds, verifies, reports confidence, produces session output
-6. **HUMAN CHECKPOINT** -- verify gates + quality gates + diff audit -> approve next
-
-**Three-Actor Topology:** Orchestrator (plans/generates prompts) | Human (IS the loop) | Executor (builds/verifies/self-assesses)
+1. **Spec-driven.** Everything derives from TASKSPEC.md. Agents derive, never guess.
+2. **Autonomous execution.** Agents build, run gates, produce reports. Humans review results only.
+3. **Invisible workflow.** Git history looks human-built. FORGE artifacts never reach the repo.
+4. **Feature-oriented git.** Branches and tags describe what was built, not which session built it.
+5. **Test suite as regression.** The test suite verifies prior work. No individual gate replay.
 
 ---
 
-## THE TWELVE COMPONENTS
+## Architecture
 
-### 1. Canonical Spec with Versioning (TASKSPEC.md)
+```
+SPEC (.forge/TASKSPEC.md)       <- ground truth, append-only
+  |
+AUDIT (.forge/AUDIT.md)         <- reality check + scar extraction
+  |
+SESSION PROMPTS                 <- spec + scars -> scoped work + gates
+  |
+AUTONOMOUS EXECUTION            <- agent builds, runs gates, reports
+  |
+HUMAN REVIEW                    <- reads verdict -> proceed / review / blocked
+```
 
-Append-only. Initial = **v1.0**. Each addendum increments: v1.1, v1.2. Session prompts reference exact version. Contains: provenance, mission, stack, directory structure, data model, features (with acceptance criteria), failure handling, env vars, build order (session DAG), addendum section.
+| Actor | Does | Does NOT |
+|-------|------|----------|
+| Orchestrator | Plans DAG, generates prompts, delegates to executor agents, manages state | Write project code |
+| Executor(s) | Build, test, run all gates, commit, produce session reports | Decide to proceed to next session |
+| Human | Reads session reports, go/no-go decisions, spec corrections when needed | Run gates, type commands, manage branches |
 
-Session count: `N = ceil(total_features / (context_budget x 0.6))`
+---
 
-### 2. Audit Report (AUDIT.md)
+## Git Conventions
 
-Per-file verdicts: KEEP / PATCH / REWRITE / DELETE / UNCERTAIN. Greenfield uses **Risk Speculation** (RISK-SPECULATION.md) with levels: SIMPLE / MODERATE / COMPLEX / RISKY.
+**Branches** -- derived from session titles in Build Order:
+`feat/data-layer`, `feat/signal-engine`, `fix/auth-timeout`.
+Parallel sessions on parallel branches. Merge to `dev` after approval. Never direct to `main`.
 
-### 3. Session 0 -- Test-First Scaffolding
+**Tags** -- semantic versions applied after merge to `dev`:
+`v0.1.0`, `v0.2.0`. Session-to-version mapping defined in Build Order.
 
-Before any implementation, generate test skeletons from spec acceptance criteria. Tests must run and fail (red phase). The executor cannot weaken tests to match its own output if tests existed first. Session 0 has no scars, no implementation deliverables. Gate: all tests exist, run, and fail.
+**Commits** -- conventional format referencing the feature:
+`feat: add dual-lane signal engine with redis caching`.
+No session numbers. No FORGE terms. No AI attribution. No session references in messages.
 
-### 4. Structured Scar Loading
+**Artifacts** -- everything FORGE-related lives in `.forge/` (gitignored):
+```
+.forge/
+  TASKSPEC.md                   # canonical spec
+  AUDIT.md                      # audit or risk report
+  AUDIT-SCARS.md                # archived scars (large projects)
+  state.json                    # DAG progress
+  sessions/
+    01-data-layer/
+      prompt.md
+      output.md
+    02-signal-engine/
+      prompt.md
+      output.md
+```
 
-Concrete failure injection into session prompts. Each scar is a structured record:
+Only `CLAUDE.md` stays in project root (standard Claude Code file, not FORGE-specific).
 
-| Field | Values |
+---
+
+## Components
+
+### 1. Canonical Spec
+
+`.forge/TASKSPEC.md` -- the project constitution. Contains: mission, stack, directory structure, data model, features with acceptance criteria, failure handling, env vars, and Build Order.
+
+**Build Order** defines each session:
+- **Title** (drives branch name: "Data Layer" -> `feat/data-layer`)
+- **Depends on** (DAG edges for parallel dispatch)
+- **Deliverables** (checklist)
+- **Verification gates** (runnable commands the agent executes)
+- **Quality gates** (BLOCK/WARN level)
+- **Branch** (e.g. `feat/data-layer`)
+- **Tag** (e.g. `v0.1.0`)
+
+Append-only during execution. Corrections via addendum + version increment (v1.0 -> v1.1). Original text stays frozen.
+
+Session count heuristic: `N ~ ceil(total_features / (context_budget * 0.6))`
+
+### 2. Audit / Risk Assessment
+
+**Brownfield (existing code):** Agent reads codebase, produces per-module verdicts:
+KEEP / PATCH / REWRITE / DELETE / UNCERTAIN.
+Extracts structured scars from discovered failures.
+
+**Greenfield (new project):** Agent reads spec, projects risk per module:
+SIMPLE / MODERATE / COMPLEX / RISKY.
+Extracts scar seeds from projected failure modes.
+
+### 3. Scar Loading
+
+Concrete failure injection into session prompts. Each scar:
+
+| Field | Format |
 |-------|--------|
-| ID | S{session}-{number} or A{number} (audit) |
-| Category | DATA-LOSS, SILENT-FAILURE, PERFORMANCE, CORRECTNESS, SECURITY, INTEGRATION, BUILD |
-| Description | Concrete failure, never abstract |
-| Severity | CRITICAL (weight 10) / HIGH (7) / MEDIUM (4) / LOW (1) |
-| Source | audit, risk-speculation, session-N, regression-failure |
+| ID | S{session}-{N}, A{N} (audit), or R{N} (risk) |
+| Category | DATA-LOSS / SILENT-FAILURE / PERFORMANCE / CORRECTNESS / SECURITY / INTEGRATION / BUILD |
+| Description | Concrete past or projected failure -- never abstract advice |
+| Severity | CRITICAL / HIGH / MEDIUM / LOW |
 
-**Context-aware loading:** If scar load exceeds 15% of context budget: load all CRITICAL, then HIGH relevant to this session's modules, then MEDIUM from N-1/N-2 only, drop LOW with reference to AUDIT-SCARS.md.
+**Loading priority:** CRITICAL always included. HIGH if relevant to this session's modules. MEDIUM from last two sessions only. LOW archived.
 
-**Pruning (>8 sessions):** Keep N-2 and N-1 active. CRITICAL never pruned. Archive rest.
+**Pruning (>6 sessions):** Retain last two sessions + all CRITICAL. Archive rest to `.forge/AUDIT-SCARS.md`.
 
-### 5. Session Prompts with Context Budget
+### 4. Session Prompts
 
-Self-contained cartridges carrying: CONTEXT (spec version), DELIVERABLES, SCAR LOAD (structured, priority-ordered), DISCOVERIES (from prior sessions), ANTI-PATTERNS, VERIFY (functional gates), QUALITY GATES (non-functional), REGRESSION (DAG-aware ancestors), CONTEXT BUDGET estimate.
+Self-contained execution cartridges carrying:
+- Spec reference (exact version, e.g. `v1.2`)
+- Deliverables from Build Order
+- Scar load (priority-ordered)
+- Discoveries forwarded from completed sessions
+- Verification gates + quality gates
+- Branch name + version tag (from Build Order)
+- Autonomous execution instructions (agent runs everything, produces report)
 
-**Budget rule:** Prompt + working room + 20% margin must not exceed 80% of model context. Split session if over.
+### 5. Session DAG + Parallel Dispatch
 
-### 6. Verification Gates (Functional)
+Sessions declare `depends_on` in Build Order. Independent sessions run concurrently.
 
-Discrete, human-executed, scoped, pre-defined. Where possible, gates run Session 0 tests. At 15% per-session failure, unverified 5-session project = 56% cumulative failure.
-
-### 7. Quality Gates (Non-Functional)
-
-Second tier. Two levels: **BLOCK** (must pass) and **WARN** (log + human decides). Standard gates: response time, bundle size, dependency count, security lint, code quality, test coverage. Quality gates complement verification gates -- "works" vs "works well."
-
-### 8. Regression Enforcement (DAG-Aware)
-
-Session N re-verifies **ancestor sessions** per the dependency DAG. Linear chain: session 4 regresses 1,2,3. DAG: session 4 regresses only its transitive `depends_on` ancestors.
-
-### 9. Session Dependency DAG
-
-Sessions declare `depends_on` in Build Order. Independent sessions run in parallel on separate branches. Merge session resolves conflicts. Scar loading in parallel sessions includes shared ancestors but NOT sibling sessions.
-
-Example:
 ```
-S0 -> S1 -> S2a (parallel) -> S3 (merge) -> S4
-              S2b (parallel) /
+S1 -> S2a (parallel) -> S3 (merge) -> S4
+       S2b (parallel) /
 ```
 
-### 10. Regression Recovery Protocol
+**Parallel dispatch:** Orchestrator spawns one executor Agent per independent session, each in its own worktree (branch isolation). All execute concurrently.
 
-Decision tree:
-- **<20 lines changed:** Fix forward with STOP format. Re-run ALL gates.
-- **>20 lines, current session caused it:** Fix forward in current session.
-- **>20 lines, deeper cause:** Rollback to `forge/session-{N-1}-passed` git tag. Regenerate session prompt with new scar.
-- **Fix-forward fails twice:** Escalate to rollback.
+**Merge sessions:** After parallel tracks complete, a dedicated merge session integrates branches into `dev`. The merge session runs the full test suite as regression. Conflicts resolved during merge.
 
-Every session that passes gates gets tagged: `forge/session-N-passed`. Every regression failure MUST produce a scar (HIGH+ severity).
+### 6. Autonomous Execution
 
-### 11. Agent Confidence Report
+Each executor agent, without human intervention:
+1. Creates feature branch from `dev`
+2. Implements all deliverables
+3. Writes tests for new functionality
+4. Runs verification gates (functional: does it work?)
+5. Runs quality gates (non-functional: BLOCK must pass, WARN gets logged)
+6. Runs the full test suite (regression: does prior work still hold?)
+7. Commits with conventional messages (feature-oriented, no FORGE terms)
+8. Produces session output report ending with a human action verdict
 
-Mandatory after every session. Structure: overall confidence (HIGH/MEDIUM/LOW), per-deliverable assessment with concerns, uncertainty flags, discovered risks not in spec, suggested scars. LOW confidence = human MUST review before running gates. Not a gate itself -- a signal amplifier for human review.
+**Verification gates** -- discrete runnable commands testing this session's deliverables. Defined in the spec at planning time, not invented during execution.
 
-### 12. Session Output Report & Diff Audit
+**Quality gates** -- two tiers:
+- BLOCK: must pass (security lint, no hardcoded secrets, type checking)
+- WARN: logged for human awareness (bundle size, coverage drop, new dependencies)
 
-Each session produces a Session Output Report: status, spec version, deliverables completed, gate results, confidence report, discoveries (facts for future sessions -- NOT scars), deviations from spec, open questions (MUST resolve before next session), new scars, diff summary.
+**Regression** -- run the project's full test suite. Passing suite = all prior sessions verified. First session also establishes test infrastructure and runner.
 
-**Diff audit** (post-execution, pre-gate): review `git diff forge/session-{N-1}-passed..HEAD`. Checklist: all changes relevant, no scope creep, no debug artifacts, no secrets, changes align with spec.
+### 7. Session Report + Human Action
+
+Every session produces a structured output report: status, deliverables completed, gate results (table), confidence per deliverable (HIGH/MEDIUM/LOW), discoveries, deviations from spec, new scars from failures encountered.
+
+The report ends with a **Human Action** block:
+
+```
+## Human Action
+
+VERDICT: PROCEED / REVIEW / BLOCKED
+
+[PROCEED]
+All gates passed. Confidence HIGH across deliverables.
+-> Merge feat/[name] to dev, tag v[X.Y.Z].
+-> Next: [session title]. Orchestrator can generate prompt.
+
+[REVIEW]
+Gates passed but attention needed:
+- [ ] Review: [specific area or concern]
+- [ ] Decide: [question requiring human judgment]
+Estimated review: ~N minutes.
+
+[BLOCKED]
+Cannot proceed until resolved:
+- [ ] [issue with root cause analysis]
+- [ ] [what must happen before retry]
+```
+
+The human reads the verdict. PROCEED = move on. REVIEW = check flagged items then move on. BLOCKED = fix something.
+
+### 8. Recovery + Spec Corrections
+
+**Gate failure:** Agent attempts fix in current session, re-runs all gates. If fix-forward fails twice -> report BLOCKED with root cause.
+
+**Test regression:** If this session caused it -> agent fixes forward. If pre-existing cause -> report BLOCKED with diagnosis.
+
+**Spec is wrong:** Human adds addendum to TASKSPEC.md: original assumption, what reality revealed, corrected assumption, affected sessions. Version increments. Orchestrator regenerates affected prompts.
 
 ---
 
-## EXECUTION PROTOCOL (8 Steps)
+## Execution Flow
 
-1. **Write the Spec** -- TASKSPEC.md v1.0 with session DAG in Build Order
-2. **Run the Audit** -- brownfield: file verdicts + structured scars; greenfield: risk speculation + scar seeds
-3. **Session 0** -- test scaffolding from acceptance criteria. Tag `forge/session-0-passed`
-4. **Generate Session Prompts** -- spec version, structured scars by priority, discoveries, quality gates, context budget. Split if over 80%
-5. **Execute** -- sequential or parallel per DAG. Each session on feature branch. `/compact` at 50%. Agent produces confidence report
-6. **Post-Session Audit & Gates** -- session output report -> diff audit -> verification gates -> quality gates -> regression gates -> tag `forge/session-N-passed`
-7. **Correct Errors** -- STOP format for mid-session fixes. Regression Recovery Protocol for regression failures
-8. **Handle Spec-Rot** -- addendum + version increment, never edit original
+1. **Init** -- `forge init project-name` scaffolds `.forge/` structure with TASKSPEC template
+2. **Spec** -- human writes `.forge/TASKSPEC.md` with Build Order (titles, branches, tags, DAG)
+3. **Audit** -- orchestrator delegates audit (brownfield) or risk speculation (greenfield) to an agent. Scars extracted.
+4. **Prompt** -- orchestrator generates session prompt from spec + audit + scars + prior discoveries
+5. **Execute** -- orchestrator delegates prompt to executor agent. Agent works autonomously: build -> gates -> report. Parallel sessions dispatched concurrently via separate agents in worktree isolation.
+6. **Report** -- agent produces session output ending with HUMAN ACTION verdict
+7. **Review** -- human reads verdict. PROCEED -> merge branch to dev, tag, next prompt. REVIEW -> check flagged items. BLOCKED -> resolve issue.
+8. **Repeat** until Build Order complete.
+
+---
+
+## Failure Modes
+
+| Failure | Mitigation |
+|---------|------------|
+| Wrong spec | Human reviews spec before first session |
+| Audit false KEEP | UNCERTAIN verdict required for partially-read files |
+| Scar bloat | Priority loading + archival pruning |
+| Prompt drifts from spec | Prompts reference exact spec version |
+| Spec-rot | Addendum protocol with version increment |
+| Regression | Test suite catches it; recovery protocol handles it |
+| Context too large | Budget estimate in prompt; split oversized sessions |
+| Parallel merge conflict | Dedicated merge session with full test regression |
+
+---
+
+## Quick Reference
+
+| Action | How |
+|--------|-----|
+| Start project | `forge init my-project` |
+| Write spec | Edit `.forge/TASKSPEC.md` |
+| Audit existing code | `forge audit` |
+| Assess greenfield risk | `forge risk` |
+| Generate session prompt | `forge prompt 1` |
+| Run gates locally | `forge gate 1` |
+| Merge and tag session | `forge merge 1` |
+| Check project status | `forge status` |
+| Add a scar | `forge scar add "description"` |
+| Validate spec structure | `forge validate` |
 
 For all templates, see `references/templates.md`.
-
----
-
-## FAILURE MODES
-
-| Failure | Symptom | Mitigation |
-|---------|---------|------------|
-| Spec incorrectness | Correct build of wrong thing | Human reviews spec before session 0 |
-| Audit false KEEP | Broken code survives | Second-pass on UNCERTAIN verdicts |
-| Scar accumulation | Prompt bloat | Structured scars with weight + context-aware loading |
-| Gate theater | Gates always pass | Session 0 tests are independent; gates test behavior |
-| Derivation drift | Prompt diverges from spec | Spec versioning -- prompts reference exact version |
-| Spec-rot | Spec assumes wrong thing | Addendum protocol with version increment |
-| Regression cascade | Session N breaks session 1 | Recovery Protocol: fix-forward or rollback |
-| Context blowout | Agent loses coherence | Context budget accounting; split oversized sessions |
-| Knowledge loss | Next session repeats mistakes | Session Output Report transfers discoveries forward |
-| Blind review | Human approves without understanding | Diff audit + confidence report surface where to look |
-| Parallel merge conflict | Independent sessions collide | Own branches per parallel session; merge session resolves |
-| Test bias | Agent writes tests matching its bugs | Session 0 generates tests before implementation |
-
----
-
-## WORKFLOW GUIDE
-
-### Starting a new project:
-1. Write TASKSPEC.md v1.0 -- ask about mission, stack, features, data model
-2. Define session dependency DAG in Build Order
-3. Set up: `sessions/` dir, CLAUDE.md, settings
-4. Run audit or risk speculation with structured scar extraction
-5. Execute Session 0: test scaffolding from acceptance criteria
-6. Generate Session 1 prompt with context budget
-
-### Continuing an existing project:
-1. Read TASKSPEC.md (check version) + prior session outputs
-2. Resolve any open questions from last session output
-3. Load discoveries from prior sessions
-4. Generate next prompt: structured scars, quality gates, context budget
-5. After execution: confidence report -> diff audit -> all gates
-
-### Regression failure:
-1. Follow Recovery Protocol decision tree (Component 10)
-2. <20 lines = fix forward; >20 lines = assess; fix-forward fails twice = rollback
-3. Generate scar from the failure
-
-### Spec correction:
-1. Addendum -- never modify original
-2. Increment version (v1.X -> v1.X+1)
-3. Document: original assumption, reality, correction, affected sessions
-
-### Session too large:
-1. Check context budget estimate
-2. Split into sub-sessions with own DAG edges
-3. Regenerate prompts
-
-### Key behaviors:
-- Structured scars loaded by priority (CRITICAL first)
-- Never skip regression gates
-- Session prompts reference exact spec version
-- Confidence reports mandatory -- LOW = human must review
-- Session output reports transfer discoveries forward
-- Tag every pass: `forge/session-N-passed`
-- `/compact` at 50%, `/clear` between sessions
-- Open questions MUST resolve before next session

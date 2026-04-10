@@ -1,6 +1,6 @@
-# FORGE v2 -- Templates Reference
+# FORGE v3 -- Templates Reference
 
-All templates used by the FORGE protocol. Copy and adapt per project.
+All templates for FORGE protocol artifacts. Copy and adapt per project.
 
 ---
 
@@ -13,10 +13,7 @@ All templates used by the FORGE protocol. Copy and adapt per project.
 | Field | Value |
 |-------|-------|
 | Date | YYYY-MM-DD |
-| Codebase State | greenfield / brownfield |
-| Audit Date | YYYY-MM-DD |
-| Orchestrator | Claude / Human / [name] |
-| FORGE Version | 2.0 |
+| Codebase | greenfield / [git hash] |
 | Spec Version | v1.0 |
 
 ## Mission
@@ -30,18 +27,18 @@ All templates used by the FORGE protocol. Copy and adapt per project.
 | Framework | | | |
 
 ## Directory Structure
-[Full tree]
+[Full tree -- agent creates exactly this]
 
 ## Data Model
-[Schemas, tables, types, relationships]
+[Schemas, tables, types, relationships, constraints]
 
 ## Features
 
 ### Feature 1: [Name]
-**Behavior:** [What it does]
-**API Contract:** [Endpoints, signatures]
-**Edge Cases:** [What could go wrong]
-**Acceptance Criteria:** [How to know it works -- these become Session 0 tests]
+**Behavior:** [what it does]
+**API Contract:** [endpoints, signatures, payloads]
+**Edge Cases:** [what could go wrong]
+**Acceptance Criteria:** [how to verify -- these drive test generation]
 
 ### Feature 2: [Name]
 [Same structure]
@@ -49,75 +46,63 @@ All templates used by the FORGE protocol. Copy and adapt per project.
 ## Failure Handling
 | Failure | Detection | Response | Recovery |
 |---------|-----------|----------|----------|
-| | | | |
 
 ## Environment Variables
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| | | |
 
 ## Build Order
 
-### Session 0: Test Scaffolding
-**Depends on:** []
-**Deliverables:**
-- [ ] Test files for all features derived from acceptance criteria
-- [ ] All tests runnable and failing (red phase)
-- [ ] Integration test shells from failure handling table
-
-**Verify:**
-\`\`\`bash
-# All test files exist and run (expect failures)
-npm test 2>&1 | grep -c "failing"
-\`\`\`
-
-**Quality Gates:** N/A
-**Context Budget:** ~[estimate] tokens
-**Scar Load:** None (first session)
-**Regression:** N/A
-
 ### Session 1: [Title]
-**Depends on:** [0]
+**Branch:** feat/[kebab-case-title]
+**Tag:** v0.1.0
+**Depends on:** []
 **Deliverables:**
 - [ ] Item 1
 - [ ] Item 2
+- [ ] Test infrastructure + tests for this session's deliverables
 
-**Verify:**
-\`\`\`bash
-# command that must pass
-\`\`\`
+**Verification Gates:**
+```bash
+# [description of what this verifies]
+[runnable command] # expected: [output]
+```
 
 **Quality Gates:**
-\`\`\`bash
-# BLOCK: security lint
-npm audit --audit-level=high
-# WARN: test coverage
-npm test -- --coverage 2>&1 | grep "All files"
-\`\`\`
-
-**Context Budget:** ~[estimate] tokens
-**Scar Load:**
-- [Structured scar: ID | Category | Description | Severity]
-
-**Regression:** Session 0 tests still run
+```bash
+# BLOCK: [description]
+[command]
+# WARN: [description]
+[command]
+```
 
 ### Session 2a: [Title -- parallel track A]
+**Branch:** feat/[kebab-case-title]
+**Tag:** v0.2.0
 **Depends on:** [1]
 **Deliverables:**
 - [ ] Item 1
 
-**Verify / Quality Gates / Context Budget / Scar Load / Regression:** [same structure]
+**Verification Gates / Quality Gates:** [same structure]
 
 ### Session 2b: [Title -- parallel track B]
+**Branch:** feat/[kebab-case-title]
+**Tag:** (tagged after merge session)
 **Depends on:** [1]
 [Same structure -- independent of 2a]
 
-### Session 3: [Title -- merge point]
+### Session 3: [Title -- merge]
+**Branch:** (merges 2a + 2b into dev)
+**Tag:** v0.3.0
 **Depends on:** [2a, 2b]
-[Same structure -- regression includes 0, 1, 2a, 2b]
+**Deliverables:**
+- [ ] Merge parallel branches, resolve conflicts
+- [ ] Integration tests across merged code
+
+**Verification Gates:** [full test suite]
 
 ## Addendum
-[Reserved for spec corrections during execution. Each addendum increments spec version.]
+[Reserved for spec corrections. Each addendum increments version. Original text above stays frozen.]
 ```
 
 ---
@@ -125,36 +110,32 @@ npm test -- --coverage 2>&1 | grep "All files"
 ## SESSION-PROMPT.md Template
 
 ```markdown
-# Session [N] -- [Project Name]
+# [Session Title] -- [Project Name]
 
 **Spec:** TASKSPEC.md v[X.Y]
-**Spec Addendums applied:** [list or "none"]
-**Previous sessions completed:** [1..N-1 status, per dependency chain]
-**Dependencies:** [session IDs this depends on]
+**Addendums applied:** [list or "none"]
+**Completed sessions:** [titles of completed sessions]
+**This session depends on:** [session titles]
 
-## Mission (This Session)
-[What this session accomplishes]
+## Mission
+[What this session delivers -- 1-2 sentences]
 
 ## Deliverables
 - [ ] Deliverable 1
 - [ ] Deliverable 2
+- [ ] Tests for all new functionality
 
-## Context Budget
-| Component | Estimated Tokens |
-|-----------|-----------------|
-| This prompt | ~X,XXX |
-| Working room | ~X,XXX |
-| Safety margin (20%) | ~X,XXX |
-| **Total** | ~X,XXX / [model limit] |
+## Branch + Tag
+- Work on branch: `feat/[name]`
+- After gates pass, this merges to `dev` and gets tagged `v[X.Y.Z]`
 
 ## Scar Load
 
-### Critical / Permanent (always loaded)
-| ID | Category | Description | Severity |
-|----|----------|-------------|----------|
-| | | | CRITICAL |
+### Critical (always loaded)
+| ID | Category | Description |
+|----|----------|-------------|
 
-### From Audit/Risk Report (relevant to this session's modules)
+### From Audit/Risk (relevant to this session)
 | ID | Category | Description | Severity |
 |----|----------|-------------|----------|
 
@@ -162,61 +143,47 @@ npm test -- --coverage 2>&1 | grep "All files"
 | ID | Category | Description | Severity |
 |----|----------|-------------|----------|
 
-### Archived (see AUDIT-SCARS.md)
-[Count] low-severity scars archived. Review if working in related modules.
-
 ## Discoveries from Prior Sessions
-- [Session X discovered: "..."]
-- [Session Y discovered: "..."]
+- [Session title]: "[factual finding relevant to this work]"
 
 ## Constraints
-[From CLAUDE.md and spec]
+[From CLAUDE.md and spec -- non-negotiable rules]
 
 ## Anti-Patterns
 - DO NOT: [specific thing] -- INSTEAD: [correct approach]
 
-## Verification Gates (Functional)
-\`\`\`bash
-# Gate 1: [description]
-command_here
-# Expected: [output]
+## Verification Gates
+Run these after implementation. All must pass.
+```bash
+# [description]
+[command] # expected: [output]
+```
 
-# Gate 2: [description]
-command_here
-# Expected: [output]
-\`\`\`
-
-## Quality Gates (Non-Functional)
-\`\`\`bash
+## Quality Gates
+```bash
 # BLOCK: [description]
-command_here
-# Threshold: [value]
+[command]
 
 # WARN: [description]
-command_here
-# Threshold: [value]
-\`\`\`
+[command]
+```
 
-## Regression Gates (DAG ancestors only)
-\`\`\`bash
-# Session 0 gates
-[commands]
+## Regression
+Run the full test suite. All tests must pass.
+```bash
+[test suite command]
+```
 
-# Session 1 gates
-[commands]
-\`\`\`
-
-## Completion Checklist
-- [ ] All deliverables implemented
-- [ ] Confidence report written
-- [ ] Session output report written
-- [ ] All verification gates pass
-- [ ] All quality gates checked (BLOCK pass, WARN logged)
-- [ ] All regression gates pass
-- [ ] Diff audit clean (no scope creep, no debug artifacts)
-- [ ] No TODO/FIXME/HACK left behind
-- [ ] Changes committed to feature branch
-- [ ] Session tagged: forge/session-N-passed
+## Autonomous Execution Instructions
+1. Create branch `feat/[name]` from `dev`
+2. Implement all deliverables
+3. Write tests for new functionality
+4. Run verification gates -- fix any failures
+5. Run quality gates -- BLOCK must pass, log WARN results
+6. Run full test suite -- fix any regressions
+7. Commit with conventional messages (feat:/fix:/refactor: -- no session numbers, no FORGE terms)
+8. Write session output report to .forge/sessions/[NN-name]/output.md
+9. If fix-forward fails twice on any gate, report BLOCKED with root cause
 ```
 
 ---
@@ -224,65 +191,62 @@ command_here
 ## SESSION-OUTPUT.md Template
 
 ```markdown
-# Session Output Report -- Session [N]
+# Session Output -- [Session Title]
 
-**Status:** PASSED / FAILED / ROLLED-BACK
-**Spec Version:** TASKSPEC.md v[X.Y]
+**Status:** PASSED / FAILED
+**Spec Version:** v[X.Y]
 **Date:** YYYY-MM-DD
-**Git Tag:** forge/session-N-passed
+**Branch:** feat/[name]
+**Tag:** v[X.Y.Z]
 
-## Deliverables Completed
+## Deliverables
 - [x] Deliverable 1
 - [x] Deliverable 2
-- [ ] Deliverable 3 (deferred to session N+1 -- reason: [X])
+- [ ] Deliverable 3 (deferred -- reason: [X])
 
 ## Gate Results
 | Gate | Type | Level | Result | Notes |
 |------|------|-------|--------|-------|
-| [gate 1] | VERIFY | BLOCK | PASS | |
-| [gate 2] | VERIFY | BLOCK | PASS | |
-| [gate 3] | QUALITY | BLOCK | PASS | |
-| [gate 4] | QUALITY | WARN | WARN | "[detail]" |
-| [regress S1] | REGRESSION | BLOCK | PASS | |
+| [name] | VERIFY | BLOCK | PASS | |
+| [name] | QUALITY | BLOCK | PASS | |
+| [name] | QUALITY | WARN | WARN | [detail] |
+| Test suite | REGRESSION | BLOCK | PASS | [N] tests, [N] passed |
 
-## Confidence Report
-### Overall Confidence: HIGH / MEDIUM / LOW
+## Confidence
+| Deliverable | Level | Concern |
+|-------------|-------|---------|
+| [deliverable 1] | HIGH | -- |
+| [deliverable 2] | MEDIUM | [specific concern] |
 
-### Per-Deliverable Assessment
-| Deliverable | Confidence | Concern |
-|-------------|-----------|---------|
-| [deliverable 1] | HIGH | None |
-| [deliverable 2] | MEDIUM | "[specific concern]" |
-
-### Uncertainty Flags
-- [Area where the agent is unsure]
-
-### Discovered Risks (not in original spec)
-- [New risk found during implementation]
-
-### Suggested Scars for Next Session
-| Category | Description | Suggested Severity |
-|----------|-------------|--------------------|
-| | | |
-
-## Discoveries (facts for future sessions, NOT scars)
-- "[Factual finding relevant to future sessions]"
+## Discoveries
+- [Factual finding relevant to future sessions]
 
 ## Deviations from Spec
-- "[What changed and why]"
+- [What diverged and why -- or "None"]
 
-## Open Questions for Human (MUST resolve before next session)
-- "[Question that must be resolved]"
+## New Scars
+| ID | Category | Description | Severity |
+|----|----------|-------------|----------|
 
-## New Scars (from failures/near-misses)
-| ID | Category | Description | Severity | Weight | Source |
-|----|----------|-------------|----------|--------|--------|
+## Human Action
 
-## Diff Summary
-- Files added: [count]
-- Files modified: [count]
-- Files deleted: [count]
-- Lines: +[added] / -[removed]
+**VERDICT:** PROCEED / REVIEW / BLOCKED
+
+[If PROCEED]
+All gates passed. Confidence HIGH across deliverables.
+-> Merge `feat/[name]` to `dev`, tag `v[X.Y.Z]`.
+-> Next: [session title]. Orchestrator can generate prompt.
+
+[If REVIEW]
+Gates passed but attention needed:
+- [ ] Review: [specific area]
+- [ ] Decide: [specific question]
+Estimated review: ~[N] minutes.
+
+[If BLOCKED]
+Cannot proceed until resolved:
+- [ ] [issue + root cause]
+- [ ] [what must happen before retry]
 ```
 
 ---
@@ -293,7 +257,6 @@ command_here
 # Audit Report -- [Project Name]
 
 **Date:** YYYY-MM-DD
-**Auditor:** [name]
 **Spec:** TASKSPEC.md v[X.Y]
 
 ## Summary
@@ -309,16 +272,16 @@ command_here
 
 ### [file/module path]
 - **Verdict:** KEEP / PATCH / REWRITE / DELETE / UNCERTAIN
-- **Reason:** [why]
-- **Failure:** [what breaks if left as-is]
+- **Reason:** [one sentence]
+- **Failure:** [what breaks -- omit for KEEP]
 
-## Structured Scar Extraction
-| ID | Category | Description | Severity | Weight | Source |
-|----|----------|-------------|----------|--------|--------|
-| A1 | [category] | [concrete failure] | CRITICAL/HIGH/MEDIUM/LOW | [10/7/4/1] | [file/module] |
+## Scar Extraction
+| ID | Category | Description | Severity |
+|----|----------|-------------|----------|
+| A1 | [category] | [concrete failure found] | CRITICAL/HIGH/MEDIUM/LOW |
 
 ## Recommendations
-- [Action items]
+[Ordered: fix first, what blocks what, suggested session ordering]
 ```
 
 ---
@@ -326,7 +289,7 @@ command_here
 ## RISK-SPECULATION.md Template (Greenfield)
 
 ```markdown
-# Risk Speculation Report -- [Project Name]
+# Risk Speculation -- [Project Name]
 
 **Date:** YYYY-MM-DD
 **Spec:** TASKSPEC.md v[X.Y]
@@ -342,69 +305,49 @@ command_here
 ## Module Risk Assessment
 
 ### [Module Name]
-- **Risk Level:** SIMPLE / MODERATE / COMPLEX / RISKY
-- **Rationale:** [why this risk level]
-- **Projected Failure Modes:** [what could go wrong]
+- **Risk:** SIMPLE / MODERATE / COMPLEX / RISKY
+- **Rationale:** [why]
+- **Projected Failures:** [what could go wrong]
 - **Mitigation:** [how to reduce risk]
-- **Anti-Patterns:** [what NOT to do]
+- **Anti-Patterns:** [concrete things to avoid]
 
 ## Integration Risk Matrix
-[Which modules interact and where failures compound]
+| Module A | Module B | Risk | Notes |
+|----------|----------|------|-------|
 
-## Structured Scar Seeds
-| ID | Category | Description | Severity | Weight | Source |
-|----|----------|-------------|----------|--------|--------|
-| R1 | [category] | [predicted failure] | [severity] | [weight] | risk-speculation |
+## Scar Seeds
+| ID | Category | Description | Severity |
+|----|----------|-------------|----------|
+| R1 | [category] | [projected failure] | [severity] |
 
 ## Recommended Session DAG
-[Dependency graph showing which sessions can parallelize]
+[Dependency graph with rationale for ordering]
 ```
 
 ---
 
-## CLAUDE.md Template (Project Rules)
+## CLAUDE.md Template (Project Root)
 
 ```markdown
-# Project Rules
+# [Project Name]
+[One-liner description]
 
 ## Commands
-- Dev: [command]
-- Test: [command]
-- Typecheck: [command]
-- Lint: [command]
-- Build: [command]
-- DB: [command]
+- Dev: `[command]`
+- Test: `[command]`
+- Lint: `[command]`
+- Build: `[command]`
 
 ## Code Style
 [Language-specific rules]
 
-## Non-Negotiable Rules
+## Rules
 - No raw DB errors exposed to clients
-- URLs from env vars, never hardcoded
-- No console.log in committed code
+- URLs from env vars only
+- No debug logging in committed code
 - Secrets in .env only
-- Feature branches only
-- Tests before commits
-
-## Known Gotchas
-[Project-specific pitfalls]
-
-## FORGE Protocol v2
-- Spec: TASKSPEC.md (versioned, append-only)
-- Audit: AUDIT.md
-- Session 0: test scaffolding before implementation
-- Sessions: sessions/ (DAG-ordered, parallel where independent)
-- Gates: verification (functional) + quality (non-functional)
-- Scars: structured schema with category/severity/weight
-- Recovery: rollback protocol with git tags (forge/session-N-passed)
-- Output: session output report with discoveries + confidence
-
-## Session Hygiene
-- /compact at ~50% context
-- /clear between sessions
-- Verify with grep, not memory
-- Tag passing sessions: forge/session-N-passed
-- Confidence report mandatory after every session
+- Feature branches, merge to dev
+- Tests before merge
 ```
 
 ---
@@ -421,7 +364,7 @@ STOP.
 [One sentence]
 
 ## Fix
-[Specific: file, function, line]
+[Specific: file, function, what to change]
 
 ## Verify
 [Command that must pass]
@@ -438,34 +381,41 @@ STOP.
 ## ADDENDUM.md Template
 
 ```markdown
-## ADDENDUM -- SPEC CORRECTION [YYYY-MM-DD] (v1.X)
+## Addendum -- v1.[X] (YYYY-MM-DD)
 
 ### Original Assumption
+[What the spec said]
+
 ### What Reality Revealed
+[What was discovered during implementation]
+
 ### Corrected Assumption
+[The new truth]
+
 ### Affected Sessions
+[Which sessions need regenerated prompts]
+
 ### Affected Modules
-### Spec Version: v1.[X-1] -> v1.X
+[Which parts of the codebase are impacted]
 ```
 
 ---
 
-## AUDIT-SCARS.md Template (Archived Scars)
+## AUDIT-SCARS.md Template (Archived)
 
 ```markdown
-# Archived Scar History -- [Project Name]
+# Archived Scars -- [Project Name]
 
 **Last Pruned:** YYYY-MM-DD
+**Policy:** Last two sessions + CRITICAL stay active. Everything else archived here.
 
-**Pruning Policy:** N-2 and N-1 scars stay active. CRITICAL never pruned. Everything else archived here.
+## Archived from [Session Title]
+| ID | Category | Description | Severity | Origin |
+|----|----------|-------------|----------|--------|
 
-## Archived from Session [X]
-| ID | Category | Description | Severity | Original Session |
-|----|----------|-------------|----------|-----------------|
-
-## Archived from Session [Y]
-| ID | Category | Description | Severity | Original Session |
-|----|----------|-------------|----------|-----------------|
+## Archived from [Session Title]
+| ID | Category | Description | Severity | Origin |
+|----|----------|-------------|----------|--------|
 ```
 
 ---
@@ -475,24 +425,24 @@ STOP.
 Adapt per project. Each gate is BLOCK or WARN level.
 
 ```bash
-# BLOCK: Security lint (no high/critical vulns)
+# BLOCK: security lint
 npm audit --audit-level=high
 
-# WARN: Response time regression (>1.5x = warn, >2x = block)
-curl -w "%{time_total}" -o /dev/null -s http://localhost:3000/api/health
+# BLOCK: type safety
+npx tsc --noEmit
 
-# WARN: Bundle/binary size (>10% growth from last session)
+# BLOCK: no hardcoded secrets
+grep -rn "API_KEY\|SECRET\|PASSWORD" src/ --include="*.ts" -l | grep -v ".env" | wc -l  # expect: 0
+
+# WARN: bundle/binary size
 du -sh dist/ | awk '{print $1}'
 
-# WARN: Dependency count (flag new additions)
-cat package.json | jq '.dependencies | length'
+# WARN: dependency count change
+jq '.dependencies | length' package.json
 
-# WARN: Code quality (new lint warnings)
+# WARN: test coverage
+npm test -- --coverage 2>&1 | grep "All files"
+
+# WARN: lint warnings
 npm run lint 2>&1 | tail -1
-
-# WARN: Test coverage (dropped from last session)
-npm run test -- --coverage 2>&1 | grep "All files"
-
-# BLOCK: No hardcoded secrets
-grep -r "API_KEY\|SECRET\|PASSWORD" src/ --include="*.ts" -l | grep -v ".env"
 ```
