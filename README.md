@@ -67,7 +67,7 @@ Verify:
 forge version
 ```
 
-To use as an agent skill, copy `SKILL.md` and `references/` into your agent's skills directory (e.g. `~/.claude/skills/forge-protocol/`).
+To use as an agent skill, copy `SKILL.md` and `references/` into your agent's skills directory under a `forge-protocol/` folder.
 
 ---
 
