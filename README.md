@@ -67,7 +67,7 @@ Verify:
 forge version
 ```
 
-To use as a Claude Code skill, place the `SKILL.md` and `references/` contents under `~/.claude/skills/forge-protocol/`.
+To use as an agent skill, copy `SKILL.md` and `references/` into your agent's skills directory (e.g. `~/.claude/skills/forge-protocol/`).
 
 ---
 
@@ -91,7 +91,7 @@ forge status               # DAG progress
 
 ```
 forge-protocol-skill/
-├── SKILL.md                    Claude Code skill definition (v3)
+├── SKILL.md                    agent skill definition (v3)
 ├── bin/forge                   CLI tool
 ├── install.sh                  symlinks bin/forge to ~/.local/bin
 ├── examples/
