@@ -1,4 +1,4 @@
-# FORGE v3 -- Templates Reference
+# FORGE v3.1 -- Templates Reference
 
 All templates for FORGE protocol artifacts. Copy and adapt per project.
 
@@ -107,6 +107,47 @@ All templates for FORGE protocol artifacts. Copy and adapt per project.
 
 ---
 
+## DISCOVERY.md Template
+
+```markdown
+# Discovery Report -- [Project Name]
+
+**Date:** YYYY-MM-DD
+**Spec:** TASKSPEC.md v[X.Y]
+
+## Checks Performed
+
+| Check | Spec assumes | Codebase reality | Match? |
+|-------|-------------|------------------|--------|
+| Package manager | [e.g. pnpm] | [e.g. npm -- package-lock.json present] | NO |
+| File: [target path] | Create new | [Already exists / Does not exist] | YES/NO |
+| Migration naming | [e.g. timestamp_desc.sql] | [e.g. YYYYMMDD_desc.sql] | NO |
+| Schema conventions | [e.g. @@map for table names] | [e.g. snake_case model names, @@schema("public")] | NO |
+| CI env: [VAR_NAME] | [assumed value] | [actual value] | YES/NO |
+| Script naming | [e.g. pnpm eval] | [e.g. npm run eval] | NO |
+| [other checks...] | | | |
+
+## Corrections Required
+
+### D1: [Short title] (SPEC-DRIFT)
+**Spec says:** [exact quote or paraphrase from TASKSPEC]
+**Reality:** [what the codebase actually does]
+**Fix:** [how to amend the spec]
+**Affects:** [which sessions / deliverables]
+
+### D2: [Short title] (SPEC-DRIFT)
+[Same structure]
+
+## Verified (No Issues)
+- [List of things the spec got right -- for completeness]
+
+## Recommendation
+[AMEND -- corrections needed before audit] or [PROCEED -- spec matches reality]
+If AMEND: list the specific TASKSPEC lines to change and the version bump (v1.0 -> v1.1).
+```
+
+---
+
 ## SESSION-PROMPT.md Template
 
 ```markdown
@@ -129,11 +170,24 @@ All templates for FORGE protocol artifacts. Copy and adapt per project.
 - Work on branch: `feat/[name]`
 - After gates pass, this merges to `dev` and gets tagged `v[X.Y.Z]`
 
+## Codebase Context
+[From Discovery -- verified facts about the codebase that this session needs.]
+- **Package manager:** [npm/pnpm/yarn/bun]
+- **Schema conventions:** [e.g. snake_case model names, @@schema("public"), @db.Uuid for ids]
+- **Migration format:** [e.g. YYYYMMDD_description.sql, must be idempotent]
+- **Import patterns:** [e.g. prisma imported from '../utils/database']
+- **Test patterns:** [e.g. jest.mock('../../src/utils/database'), clearMocks: true]
+- **Existing files at target paths:** [list any files this session modifies that already exist, with their current purpose]
+
 ## Scar Load
 
 ### Critical (always loaded)
 | ID | Category | Description |
 |----|----------|-------------|
+
+### From Discovery (SPEC-DRIFT)
+| ID | Category | Description | Severity |
+|----|----------|-------------|----------|
 
 ### From Audit/Risk (relevant to this session)
 | ID | Category | Description | Severity |
@@ -258,6 +312,7 @@ Cannot proceed until resolved:
 
 **Date:** YYYY-MM-DD
 **Spec:** TASKSPEC.md v[X.Y]
+**Discovery:** [applied / skipped (greenfield)]
 
 ## Summary
 | Verdict | Count |

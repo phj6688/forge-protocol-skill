@@ -4,7 +4,7 @@ set -euo pipefail
 # FORGE CLI v3 — Autonomous Agent Delegation Protocol
 # All state lives in .forge/ (gitignored). Git history stays clean.
 
-FORGE_VERSION="3.0.0"
+FORGE_VERSION="3.1.0"
 FORGE_DIR=".forge"
 SESSIONS_DIR="$FORGE_DIR/sessions"
 STATE_FILE="$FORGE_DIR/state.json"
@@ -26,6 +26,7 @@ ${BOLD}Usage:${NC} forge <command> [options]
 
 ${BOLD}Commands:${NC}
   ${CYAN}init${NC} [dir]              Initialize a FORGE project (.forge/ directory)
+  ${CYAN}discover${NC}                Verify spec assumptions against codebase
   ${CYAN}audit${NC}                   Generate audit prompt
   ${CYAN}risk${NC}                    Generate risk speculation prompt (greenfield)
   ${CYAN}prompt${NC} <N>              Generate session N prompt from spec + audit
@@ -40,8 +41,9 @@ ${BOLD}Commands:${NC}
 ${BOLD}Workflow:${NC}
   1. forge init my-project     # scaffold .forge/
   2. Edit .forge/TASKSPEC.md    # write the spec
-  3. forge audit                # or 'forge risk' for greenfield
-  4. forge prompt 1             # generate session 1 prompt
+  3. forge discover             # verify spec vs codebase (skip for greenfield)
+  4. forge audit                # or 'forge risk' for greenfield
+  5. forge prompt 1             # generate session 1 prompt
   5. Agent executes autonomously
   6. forge gate 1               # verify locally (optional — agent already ran gates)
   7. forge merge 1              # merge to dev + tag
@@ -234,6 +236,78 @@ CLAUDE
     echo -e "${GREEN}FORGE initialized.${NC}"
     echo -e "Next: edit ${BOLD}.forge/TASKSPEC.md${NC} — the spec is your most important investment."
     echo -e "Then: ${CYAN}forge audit${NC} (existing code) or ${CYAN}forge risk${NC} (greenfield)"
+}
+
+cmd_discover() {
+    require_forge
+    require_spec
+
+    echo -e "${BOLD}Discovery prompt:${NC}"
+    echo ""
+    cat << 'DISCOVER_PROMPT'
+============================================================
+FORGE DISCOVERY — Paste into Claude Code or delegate to agent
+============================================================
+
+Read .forge/TASKSPEC.md completely. Then verify every assumption
+the spec makes against the actual codebase.
+
+For EACH of these checks, report what the spec assumes vs. what
+the codebase actually does:
+
+1. **Package manager:** Check for package-lock.json (npm),
+   pnpm-lock.yaml (pnpm), yarn.lock (yarn), bun.lockb (bun).
+
+2. **File collisions:** For every file path the spec says "create",
+   check if it already exists. If it does, note its current purpose.
+
+3. **Migration format:** ls the migrations directory. What naming
+   convention is used? (timestamps, YYYYMMDD, sequential numbers)
+
+4. **Schema conventions:** Read the last 3 models in the ORM schema.
+   What naming pattern do they use? (snake_case, camelCase, @@map, etc.)
+   What decorators/annotations are required? (@@schema, etc.)
+
+5. **CI environment:** Read the CI workflow file. What env vars are set?
+   Are any of them dummy/placeholder values?
+
+6. **Script naming:** Read package.json (or equivalent). What scripts
+   exist? What naming convention do they follow?
+
+7. **Import patterns:** How does existing code import shared utilities?
+   (database client, auth middleware, etc.)
+
+8. **Test patterns:** How are existing tests structured? What mocking
+   patterns are used?
+
+Output format:
+
+## Checks Performed
+| Check | Spec assumes | Codebase reality | Match? |
+|-------|-------------|------------------|--------|
+| [check] | [assumption] | [reality] | YES/NO |
+
+## Corrections Required
+### D1: [title] (SPEC-DRIFT)
+**Spec says:** [quote]
+**Reality:** [fact]
+**Fix:** [what to change in TASKSPEC]
+**Affects:** [sessions]
+
+## Verified (No Issues)
+- [list of correct assumptions]
+
+## Recommendation
+AMEND (with version bump) or PROCEED
+
+Save output as .forge/DISCOVERY.md
+
+============================================================
+DISCOVER_PROMPT
+    echo ""
+    echo -e "Save output to ${BOLD}.forge/DISCOVERY.md${NC}"
+    echo -e "If corrections found: amend TASKSPEC.md (version bump), then ${CYAN}forge audit${NC}"
+    echo -e "If no corrections: ${CYAN}forge audit${NC} or ${CYAN}forge risk${NC}"
 }
 
 cmd_audit() {
@@ -854,6 +928,7 @@ cmd_version() {
 # Main dispatch
 case "${1:-}" in
     init)       shift; cmd_init "$@" ;;
+    discover)   cmd_discover ;;
     audit)      cmd_audit ;;
     risk)       cmd_risk ;;
     prompt)     shift; cmd_prompt "$@" ;;
