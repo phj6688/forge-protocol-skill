@@ -4,6 +4,8 @@
 
 *Shape it once. Strike until it holds.*
 
+![FORGE demo](docs/images/demo.gif)
+
 FORGE turns a single specification into a graph of autonomous build sessions. Agents derive, build, verify, and report. Humans review verdicts -- not diffs, not gates, not branches.
 
 It solves four failure modes of long-running AI-assisted builds:
